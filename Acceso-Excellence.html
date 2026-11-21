@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Iniciar sesión | Excellence Hair Artists</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Playfair+Display:ital,wght@0,400;0,500;1,400&display=swap">
+<link rel="stylesheet" href="Excellence-acceso.css">
+</head>
+<body>
+<header class="site-head"><a class="wordmark" href="Excellence-Hair-Artists.html">EXCELLENCE<span>HAIR ARTISTS</span></a><a class="back" href="Excellence-Hair-Artists.html">Volver a la web</a></header>
+<main class="narrow">
+  <h1>Qué bien <em>verte.</em></h1>
+  <p class="intro">Entra en tu perfil para ver tus citas o preparar tu próxima visita a Excellence.</p>
+  <div class="panel">
+    <form id="login" class="stack" method="post">
+      <label>Correo electrónico o teléfono
+        <input name="identifier" type="text" autocomplete="username" placeholder="Correo o número de teléfono" required>
+      </label>
+      <label>Contraseña
+        <input name="password" type="password" autocomplete="current-password" required>
+      </label>
+      <button class="button" type="submit">Entrar al perfil</button>
+      <p id="login-status" class="status" role="status"></p>
+    </form>
+    <p id="register-prompt">¿Es tu primera visita? <button class="soft-button" id="show-register" type="button" aria-controls="register">Crear cuenta</button></p>
+    <form id="register" class="stack" method="post" hidden>
+      <label>Nombre
+        <input name="fullName" autocomplete="name" required maxlength="100">
+      </label>
+      <label>Correo electrónico
+        <input name="email" type="email" autocomplete="email" required>
+      </label>
+      <label>Teléfono
+        <input name="phone" type="tel" autocomplete="tel" placeholder="Ej. +34 612 345 678" required>
+      </label>
+      <label>Contraseña
+        <input name="password" type="password" autocomplete="new-password" minlength="8" required aria-describedby="password-help">
+      </label>
+      <p id="password-help">Usa al menos 8 caracteres. Para la vista previa, elige una contraseña de prueba.</p>
+      <label>Repite la contraseña
+        <input name="confirmation" type="password" autocomplete="new-password" minlength="8" required>
+      </label>
+      <button class="button" type="submit">Crear cuenta</button>
+      <p id="register-status" role="status"></p>
+      <p>¿Ya tienes cuenta? <button class="soft-button" id="show-login" type="button" aria-controls="login">Inicia sesión</button></p>
+    </form>
+    <details class="demo-credentials" open>
+      <summary>Datos de acceso de prueba</summary>
+      <p>Usa <strong>demo@excellence.test</strong> o <strong>600 123 456</strong> con la contraseña <strong>Excellence2026</strong>.</p>
+      <p class="demo">Vista previa. Usa solo los datos de prueba.</p>
+    </details>
+  </div>
+</main>
+<script>
+const login = document.getElementById('login');
+const loginStatus = document.getElementById('login-status');
+const register = document.getElementById('register');
+const registerStatus = document.getElementById('register-status');
+const credentials = document.querySelector('.demo-credentials');
+const params = new URLSearchParams(location.search);
+function toggleRegistration(showRegistration) {
+  register.hidden = !showRegistration;
+  login.hidden = showRegistration;
+  credentials.hidden = showRegistration;
+  document.getElementById('register-prompt').hidden = showRegistration;
+  document.querySelector('h1').innerHTML = showRegistration ? 'Crea <em>tu cuenta.</em>' : 'Qué bien <em>verte.</em>';
+  document.querySelector('main .intro').textContent = showRegistration
+    ? 'Cuéntanos cómo contactar contigo y tendrás todo listo para tu primera cita.'
+    : 'Entra en tu perfil para ver tus citas o preparar tu próxima visita a Excellence.';
+  const firstField = showRegistration ? register.elements.fullName : login.elements.identifier;
+  firstField.focus();
+}
+document.getElementById('show-register').addEventListener('click', () => toggleRegistration(true));
+document.getElementById('show-login').addEventListener('click', () => toggleRegistration(false));
+function openProfile(account) {
+  const profile = new URL('Perfil-Excellence.html', location.href);
+  for (const name of ['servicio', 'seccion']) {
+    if (params.has(name)) profile.searchParams.set(name, params.get(name));
+  }
+  try {
+    sessionStorage.setItem('excellence-demo-access', 'active');
+    sessionStorage.setItem('excellence-demo-profile', JSON.stringify(account));
+  } catch {
+    return false;
+  }
+  location.assign(profile.href);
+  return true;
+}
+login.addEventListener('submit', event => {
+  event.preventDefault();
+  const identifier = login.elements.identifier.value.trim().toLowerCase();
+  const phone = identifier.replace(/[^0-9]/g, '');
+  const demoUser = identifier === 'demo@excellence.test' || ['600123456', '34600123456'].includes(phone) && /^[+0-9 ().-]+$/.test(identifier);
+  if (!demoUser || login.elements.password.value !== 'Excellence2026') {
+    loginStatus.textContent = 'Los datos no coinciden. Usa el correo o el teléfono y la contraseña de prueba.';
+    return;
+  }
+  login.elements.password.value = '';
+  if (!openProfile({kind:'returning'})) loginStatus.textContent = 'El navegador no permite abrir la sesión de prueba.';
+});
+register.addEventListener('submit', event => {
+  event.preventDefault();
+  const fields = register.elements;
+  const name = fields.fullName.value.trim();
+  const phone = fields.phone.value.trim().replace(/[ ().-]/g, '');
+  if (!name || !/^[+]?[0-9]{7,15}$/.test(phone)) {
+    registerStatus.textContent = 'Introduce tu nombre y un número de teléfono válido.';
+    return;
+  }
+  if (fields.password.value !== fields.confirmation.value) {
+    registerStatus.textContent = 'Las contraseñas tienen que coincidir.';
+    fields.confirmation.focus();
+    return;
+  }
+  fields.password.value = '';
+  fields.confirmation.value = '';
+  if (!openProfile({kind:'new', name, phone})) registerStatus.textContent = 'El navegador no permite abrir la sesión de prueba.';
+});
+</script>
+</body>
+</html>
