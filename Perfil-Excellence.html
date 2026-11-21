@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Mi perfil | Excellence Hair Artists</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Playfair+Display:ital,wght@0,400;0,500;1,400&display=swap">
+<link rel="stylesheet" href="Excellence-acceso.css">
+</head>
+<body>
+<header class="site-head"><a class="wordmark" href="Excellence-Hair-Artists.html">EXCELLENCE<span>HAIR ARTISTS</span></a><a class="back" href="Excellence-Hair-Artists.html">Volver a la web</a></header>
+<main id="profile" hidden>
+  <div class="profile-top">
+    <div><h1>Mi <em>perfil.</em></h1><p class="intro" id="profile-greeting">Qué gusto tenerte de vuelta en Excellence.</p><p class="demo">Sesión de prueba</p></div>
+    <div class="profile-actions">
+      <button class="button" id="edit-profile" type="button" aria-expanded="false" aria-controls="edit-fields foto">Editar perfil</button>
+      <button class="soft-button" id="signout" type="button">Cerrar sesión</button>
+    </div>
+  </div>
+  <div class="profile-grid">
+    <article class="panel" id="edit-fields" hidden>
+      <h2>Editar perfil</h2>
+      <form id="profile-form" class="stack">
+        <div class="book-fields">
+          <label>Nombre <input name="fullName" type="text" autocomplete="name" required maxlength="100"></label>
+          <label>Teléfono <input name="phone" type="tel" autocomplete="tel" required></label>
+          <label>Nueva contraseña <input name="password" type="password" autocomplete="new-password" minlength="8" aria-describedby="edit-password-help"></label>
+          <label>Repite la nueva contraseña <input name="confirmation" type="password" autocomplete="new-password" minlength="8"></label>
+        </div>
+        <p id="edit-password-help">Rellena la contraseña solo si quieres cambiarla. El cambio es de prueba.</p>
+        <p id="edit-error" role="status"></p>
+      </form>
+    </article>
+    <article class="panel" id="foto">
+      <h2>Fotos de tu pelo</h2>
+      <p id="photo-guide" hidden>Sube una foto de frente y una de cada lado. Hazlas con luz natural, con el pelo suelto, y procura que se vea desde la raíz hasta las puntas.</p>
+      <div class="hair-photos">
+        <div class="hair-photo">
+          <button class="avatar" type="button" aria-label="Ampliar foto de frente" disabled><span aria-hidden="true">F</span><img id="avatar" alt="Vista previa del cabello de frente" hidden></button>
+          <label>De frente <input id="photo" type="file" accept="image/*" data-preview="avatar" hidden></label>
+        </div>
+        <div class="hair-photo">
+          <button class="avatar" type="button" aria-label="Ampliar foto del perfil izquierdo" disabled><span aria-hidden="true">I</span><img id="avatar-left" alt="Vista previa del perfil izquierdo" hidden></button>
+          <label>Perfil izquierdo <input type="file" accept="image/*" data-preview="avatar-left" hidden></label>
+        </div>
+        <div class="hair-photo">
+          <button class="avatar" type="button" aria-label="Ampliar foto del perfil derecho" disabled><span aria-hidden="true">D</span><img id="avatar-right" alt="Vista previa del perfil derecho" hidden></button>
+          <label>Perfil derecho <input type="file" accept="image/*" data-preview="avatar-right" hidden></label>
+        </div>
+      </div>
+      <p id="photo-size-help" hidden>Las fotos grandes se reducen automáticamente. En esta vista previa se quedan en tu navegador.</p>
+      <p id="photo-status" role="status"></p>
+      <div class="edit-actions" id="edit-actions" hidden>
+        <button class="button" type="submit" form="profile-form" id="save-profile">Guardar cambios</button>
+        <button class="soft-button" type="button" id="cancel-profile">Cancelar</button>
+      </div>
+      <p id="profile-status" role="status"></p>
+    </article>
+    <article class="panel">
+      <h2>Historial de citas</h2>
+      <p>Citas de ejemplo.</p>
+      <ul class="history">
+        <li><span>Coloración</span><time datetime="2026-10-22">22 oct 2026</time></li>
+        <li><span>Corte</span><time datetime="2026-09-10">10 sep 2026</time></li>
+      </ul>
+    </article>
+    <article class="panel" id="reserva">
+      <h2>Pedir cita</h2>
+      <p>¿Qué te apetece hacerte esta vez? Los horarios de ejemplo tienen en cuenta el tiempo que el salón asigna a cada servicio para tu perfil.</p>
+      <form id="booking" class="stack">
+        <div class="book-fields">
+          <label>Servicio
+            <select name="service" required>
+              <option value="">Elige un servicio</option>
+              <option value="color">Coloración</option>
+              <option value="curly">Cuidado de rizos</option>
+              <option value="care">Corte</option>
+            </select>
+          </label>
+          <label>Día <input type="date" name="day" required disabled></label>
+        </div>
+        <output id="estimate" aria-live="polite"></output>
+        <div id="times" role="group" aria-label="Horarios de ejemplo"></div>
+        <button class="button" id="confirm" type="submit" disabled>Ver resumen de cita</button>
+        <p id="booking-status" role="status"></p>
+      </form>
+    </article>
+  </div>
+</main>
+<dialog id="photo-dialog" class="photo-dialog" aria-label="Foto ampliada">
+  <form method="dialog"><button class="soft-button" type="submit">Cerrar foto</button></form>
+  <img id="enlarged-photo" alt="">
+</dialog>
+<script>
+const get = id => document.getElementById(id);
+let demoSession = false;
+let account = {};
+try {
+  demoSession = sessionStorage.getItem('excellence-demo-access') === 'active';
+  account = JSON.parse(sessionStorage.getItem('excellence-demo-profile') || '{}');
+} catch {}
+if (!demoSession) {
+  location.replace('Acceso-Excellence.html' + location.search);
+} else {
+  get('profile').hidden = false;
+  initProfile();
+}
+
+function initProfile() {
+  const params = new URLSearchParams(location.search);
+  const form = get('booking');
+  const service = form.elements.service;
+  const day = form.elements.day;
+  const times = get('times');
+  const estimate = get('estimate');
+  const confirm = get('confirm');
+  const bookingStatus = get('booking-status');
+  const isNew = account.kind === 'new';
+  const durations = isNew ? {color: 90, curly: 65, care: 35} : {color: 120, curly: 75, care: 45};
+  if (isNew) {
+    get('profile-greeting').textContent = '¡Hola, ' + account.name + '! Ya puedes elegir tu primera cita.';
+    const history = document.querySelector('.history');
+    history.previousElementSibling.textContent = 'Todavía no tienes citas en tu historial.';
+    history.hidden = true;
+    get('reserva').querySelector('p').textContent = 'Primera visita. Los horarios de prueba se calculan con la duración inicial de cada servicio.';
+  }
+  const photoUrls = new Map();
+  const draftPhotos = new Map();
+  const pendingPhotos = new Map();
+  const inputs = [...document.querySelectorAll('[data-preview]')];
+  const editor = get('profile-form');
+  const toggle = get('edit-profile');
+  const save = get('save-profile');
+  const dialog = get('photo-dialog');
+  const enlarged = get('enlarged-photo');
+  if (!isNew && account.name) get('profile-greeting').textContent = '¡Hola, ' + account.name + '!';
+  function showPhoto(input, url) {
+    const preview = get(input.dataset.preview);
+    preview.classList.remove('ready');
+    if (url) preview.src = url;
+    else preview.removeAttribute('src');
+    preview.hidden = !url;
+    preview.previousElementSibling.hidden = Boolean(url);
+    preview.parentElement.disabled = !url;
+    if (url) requestAnimationFrame(() => preview.classList.add('ready'));
+  }
+  function setEditing(editing) {
+    toggle.setAttribute('aria-expanded', String(editing));
+    ['edit-fields', 'photo-guide', 'photo-size-help', 'edit-actions'].forEach(id => { get(id).hidden = !editing; });
+    inputs.forEach(input => { input.hidden = !editing; });
+    get('photo-status').textContent = '';
+    get('edit-error').textContent = '';
+    if (editing) {
+      editor.elements.fullName.value = account.name || 'Clienta de Excellence';
+      editor.elements.phone.value = account.phone || '600 123 456';
+      editor.elements.fullName.focus();
+    } else {
+      editor.reset();
+      toggle.focus({preventScroll:true});
+    }
+  }
+  function cancelEditing() {
+    pendingPhotos.clear();
+    save.disabled = false;
+    draftPhotos.forEach(url => URL.revokeObjectURL(url));
+    draftPhotos.clear();
+    inputs.forEach(input => showPhoto(input, photoUrls.get(input)));
+    setEditing(false);
+  }
+  toggle.addEventListener('click', () => {
+    get('profile-status').textContent = '';
+    if (get('edit-fields').hidden) setEditing(true);
+    else cancelEditing();
+  });
+  get('cancel-profile').addEventListener('click', cancelEditing);
+  editor.addEventListener('submit', event => {
+    event.preventDefault();
+    if (get('edit-fields').hidden || pendingPhotos.size) return;
+    const fields = editor.elements;
+    const name = fields.fullName.value.trim();
+    const phone = fields.phone.value.trim().replace(/[ ().-]/g, '');
+    if (!name || !/^[+]?[0-9]{7,15}$/.test(phone)) {
+      get('edit-error').textContent = 'Introduce tu nombre y un teléfono válido.';
+      return;
+    }
+    if (fields.password.value !== fields.confirmation.value) {
+      get('edit-error').textContent = 'Las contraseñas tienen que coincidir.';
+      fields.confirmation.focus();
+      return;
+    }
+    const changedPassword = Boolean(fields.password.value);
+    account = {...account, name, phone};
+    try { sessionStorage.setItem('excellence-demo-profile', JSON.stringify(account)); } catch {}
+    draftPhotos.forEach((url, input) => {
+      const previous = photoUrls.get(input);
+      if (previous) URL.revokeObjectURL(previous);
+      photoUrls.set(input, url);
+    });
+    draftPhotos.clear();
+    get('profile-greeting').textContent = '¡Hola, ' + name + '!';
+    setEditing(false);
+    get('profile-status').textContent = changedPassword
+      ? 'Perfil actualizado. El cambio de contraseña se ha simulado.'
+      : 'Perfil actualizado.';
+  });
+  inputs.forEach(input => {
+    const preview = get(input.dataset.preview);
+    preview.parentElement.addEventListener('click', () => {
+      enlarged.src = preview.src;
+      enlarged.alt = preview.alt;
+      dialog.showModal();
+    });
+  });
+  dialog.addEventListener('close', () => enlarged.removeAttribute('src'));
+  const dateFormat = new Intl.DateTimeFormat('sv-SE', {timeZone:'Europe/Madrid', year:'numeric', month:'2-digit', day:'2-digit'});
+  const hourFormat = new Intl.DateTimeFormat('en-GB', {timeZone:'Europe/Madrid', hour:'2-digit', minute:'2-digit', hourCycle:'h23'});
+  day.min = dateFormat.format(new Date());
+  if (Object.hasOwn(durations, params.get('servicio'))) service.value = params.get('servicio');
+  get('signout').addEventListener('click', () => {
+    photoUrls.forEach(url => URL.revokeObjectURL(url));
+    draftPhotos.forEach(url => URL.revokeObjectURL(url));
+    try {
+      sessionStorage.removeItem('excellence-demo-access');
+      sessionStorage.removeItem('excellence-demo-profile');
+    } catch {}
+    location.replace('Acceso-Excellence.html');
+  });
+  window.addEventListener('pageshow', event => {
+    if (event.persisted) location.reload();
+  });
+  inputs.forEach(input => {
+    input.addEventListener('change', async () => {
+      const image = input.files[0];
+      if (!image || input.hidden) return;
+      input.value = '';
+      const job = Symbol();
+      pendingPhotos.set(input, job);
+      save.disabled = true;
+      const status = get('photo-status');
+      status.textContent = 'Preparando la foto…';
+      try {
+        const optimized = await optimizePhoto(image);
+        if (pendingPhotos.get(input) !== job) return;
+        const previous = draftPhotos.get(input);
+        if (previous) URL.revokeObjectURL(previous);
+        const url = URL.createObjectURL(optimized);
+        draftPhotos.set(input, url);
+        showPhoto(input, url);
+        const count = new Set([...photoUrls.keys(), ...draftPhotos.keys()]).size;
+        status.textContent = count + ' de 3 fotos añadidas. Última foto: ' + Math.max(1, Math.round(optimized.size / 1024)) + ' KB.';
+      } catch (error) {
+        if (pendingPhotos.get(input) === job) status.textContent = error.message;
+      } finally {
+        if (pendingPhotos.get(input) === job) pendingPhotos.delete(input);
+        save.disabled = pendingPhotos.size > 0;
+      }
+    });
+  });
+
+  async function optimizePhoto(file) {
+    if (file.size > 40 * 1024 * 1024) throw Error('La foto supera los 40 MB. Elige una versión más ligera.');
+    const url = URL.createObjectURL(file);
+    try {
+      const image = new Image();
+      image.src = url;
+      try {
+        await image.decode();
+      } catch {
+        throw Error('No se ha podido abrir la foto. Prueba con una imagen JPG, PNG o WebP.');
+      }
+      const canvas = document.createElement('canvas');
+      const scale = Math.min(1, 1600 / Math.max(image.naturalWidth, image.naturalHeight));
+      canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+      canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+      const context = canvas.getContext('2d', {alpha:false});
+      if (!context) throw Error('No se ha podido preparar la foto.');
+      context.fillStyle = '#fff';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      for (const quality of [0.86, 0.74, 0.62]) {
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', quality));
+        if (!blob) throw Error('No se ha podido preparar la foto.');
+        if (blob.size <= 900 * 1024 || quality === 0.62) return blob;
+      }
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  function renderTimes() {
+    times.replaceChildren();
+    bookingStatus.textContent = '';
+    confirm.disabled = true;
+    const length = durations[service.value];
+    day.disabled = !length;
+    estimate.value = length ? length + ' min aprox.' : '';
+    if (!length || !day.value || !day.validity.valid) return;
+    const weekday = new Date(day.value + 'T12:00:00Z').getUTCDay();
+    if (weekday === 0 || weekday === 1) {
+      bookingStatus.textContent = 'El salón cierra los domingos y lunes.';
+      return;
+    }
+    const [opening, closing] = weekday === 6 ? [600,840] : [630,1140];
+    const now = new Date();
+    for (let start = opening; start + length <= closing; start += 60) {
+      const time = String(Math.floor(start / 60)).padStart(2, '0') + ':' + String(start % 60).padStart(2, '0');
+      if (day.value === dateFormat.format(now) && time <= hourFormat.format(now)) continue;
+      const label = document.createElement('label');
+      const radio = document.createElement('input');
+      radio.type = 'radio';
+      radio.name = 'time';
+      radio.value = time;
+      radio.required = true;
+      label.append(radio, time);
+      times.append(label);
+    }
+    if (!times.children.length) bookingStatus.textContent = 'No hay horas de ejemplo disponibles ese día.';
+  }
+  service.addEventListener('change', renderTimes);
+  day.addEventListener('change', renderTimes);
+  times.addEventListener('change', () => {
+    bookingStatus.textContent = '';
+    confirm.disabled = false;
+  });
+  form.addEventListener('submit', event => {
+    event.preventDefault();
+    const time = new FormData(form).get('time');
+    if (!time) return;
+    const date = new Intl.DateTimeFormat('es-ES', {dateStyle:'long', timeZone:'Europe/Madrid'}).format(new Date(day.value + 'T12:00:00Z'));
+    bookingStatus.textContent = service.selectedOptions[0].text + ' · ' + date + ' a las ' + time + ' · ' + estimate.value + '. Cita de ejemplo sin confirmar.';
+  });
+  renderTimes();
+  if (params.get('seccion') === 'foto') {
+    get('foto').scrollIntoView();
+  } else if (service.value) {
+    get('reserva').scrollIntoView();
+    day.focus({preventScroll:true});
+  }
+}
+</script>
+</body>
+</html>
